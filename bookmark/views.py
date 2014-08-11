@@ -92,4 +92,33 @@ def add_category(request):
     # Bad form (or form details), no form supplied...
     # Render the form with error messages (if any).
     return render_to_response('bookmark/add_category.html', {'form': form}, context)
-  
+
+def add_page(request, category_name_url):
+  context = RequestContext(request)
+  # Change underscores in the category name to spaces.
+  # URLs don't handle spaces well, so we encode them as underscores.
+  # We can then simply replace the underscores with spaces again to get the name.
+  category_name = category_name_url.replace('_', ' ')
+  category_object = Category.objects.get(name=category_name)
+      # A HTTP POST?
+  if request.method == 'POST':
+        form = PageForm(request.POST)
+
+        # Have we been provided with a valid form?
+        if form.is_valid():
+            # Save the new page to the database.
+            new_page = form.save(commit=False)
+            new_page.category = category_object
+            new_page.views = 0 #lol double confirm
+            new_page.save()
+
+            # Now call the category() view.
+            # The user will be shown the category page.
+            return category(request, category_name_url)
+        else:
+            # The supplied form contained errors - just print them to the terminal.
+            print form.errors
+  else:
+        # If the request was not a POST, display the form to enter details.
+        form = PageForm()
+  return render_to_response('bookmark/add_page.html', {'form': form, 'category': category_object, 'category_name': category_name_url}, context)
